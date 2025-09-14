@@ -1,7 +1,7 @@
 import os
 import time
 from dotenv import load_dotenv
-from config import SOURCE_RESUME_PATH, PARSED_RESUME_PATH, GEMINI_TOP_N, API_CALL_DELAY_SECONDS, MIN_EXPERIENCE_YEARS, MAX_EXPERIENCE_YEARS, MIN_SALARY_INR
+from config import SOURCE_RESUME_PATH, PARSED_RESUME_PATH, GEMINI_TOP_N, MIN_EXPERIENCE_YEARS, MAX_EXPERIENCE_YEARS, MIN_SALARY_INR
 from modules.scraper import run_scraper
 from modules.nlp_processor import filter_jobs_by_similarity
 from modules.gemini_client import parse_resume, get_job_rankings, generate_latex_resume, classify_experience_level 
