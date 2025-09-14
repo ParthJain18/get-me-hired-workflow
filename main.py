@@ -8,6 +8,8 @@ from modules.gemini_client import parse_resume, get_job_rankings, generate_latex
 from modules.resume_generator import create_resume_pdf
 from modules.email_module import send_notification
 from modules.tracker import load_processed_jobs, update_processed_jobs
+from keyword_filter import filter_jobs_by_experience_keywords, should_use_gemini_classification, filter_for_entry_level_jobs
+
 
 def setup_resume_for_matching():
     try:
@@ -84,30 +86,49 @@ def main():
         if not new_jobs:
             print("--- Pipeline finished: No new jobs match your salary criteria. ---")
             return
-        
-    print("\n--- Starting Experience Level Classification ---")
-    classified_and_filtered_jobs = []
-    for i, job in enumerate(new_jobs):
-        experience_data = classify_experience_level(job)
-        
-        # Check if the job's required experience range overlaps with your desired range
-        if experience_data:
-            job_min = experience_data.get('min_years', 99)
-            job_max = experience_data.get('max_years', 99)
-            
-            is_match = max(MIN_EXPERIENCE_YEARS, job_min) <= min(MAX_EXPERIENCE_YEARS, job_max)
-            
-            if is_match:
-                print(f"  ✅ Match found: '{job.get('title')}' requires {job_min}-{job_max} years. Adding to list.")
-                job['min_years'] = job_min
-                job['max_years'] = job_max
-                classified_and_filtered_jobs.append(job)
-            else:
-                 print(f"  ❌ No match: '{job.get('title')}' requires {job_min}-{job_max} years. Skipping.")
+    
+    keyword_filtered_jobs = filter_jobs_by_experience_keywords(new_jobs, MAX_EXPERIENCE_YEARS)
 
-        # Respect API rate limits
-        if i < len(new_jobs) - 1:
-            time.sleep(5)
+    if not keyword_filtered_jobs:
+        print("--- Pipeline finished: No jobs match your experience criteria after keyword filtering. ---")
+        return
+    use_gemini = should_use_gemini_classification(len(keyword_filtered_jobs))
+    
+    if use_gemini:
+        print("\n--- Starting Gemini Experience Level Classification ---")
+        classified_and_filtered_jobs = []
+        
+        for i, job in enumerate(keyword_filtered_jobs):
+            experience_data = classify_experience_level(job)
+            
+            if experience_data:
+                job_min = experience_data.get('min_years', 99)
+                job_max = experience_data.get('max_years', 99)
+                
+                is_match = max(MIN_EXPERIENCE_YEARS, job_min) <= min(MAX_EXPERIENCE_YEARS, job_max)
+                
+                if is_match:
+                    print(f"  ✅ Match found: '{job.get('title')}' requires {job_min}-{job_max} years. Adding to list.")
+                    job['min_years'] = job_min
+                    job['max_years'] = job_max
+                    classified_and_filtered_jobs.append(job)
+                else:
+                    print(f"  ❌ No match: '{job.get('title')}' requires {job_min}-{job_max} years. Skipping.")
+
+            # Respect API rate limits
+            if i < len(keyword_filtered_jobs) - 1:
+                time.sleep(5)
+
+        print(f"--- Gemini classification finished. Found {len(classified_and_filtered_jobs)} jobs matching your experience range. ---")
+        
+        if not classified_and_filtered_jobs:
+            print("--- Pipeline finished: No jobs passed Gemini classification. ---")
+            return
+            
+        final_filtered_jobs = classified_and_filtered_jobs
+    else:
+        print("--- Skipping Gemini classification, using keyword filtering results. ---")
+        final_filtered_jobs = keyword_filtered_jobs
 
     print(f"--- Experience classification finished. Found {len(classified_and_filtered_jobs)} jobs matching your experience range. ---")
     if not classified_and_filtered_jobs:
@@ -115,7 +136,7 @@ def main():
         return
 
     # Step 6: Pre-filter with Cosine Similarity
-    filtered_jobs = filter_jobs_by_similarity(new_jobs, resume_text_for_matching)
+    filtered_jobs = filter_jobs_by_similarity(final_filtered_jobs, resume_text_for_matching)
     if not filtered_jobs: return
 
     # Step 7: Get Job Rankings from Gemini
@@ -132,7 +153,7 @@ def main():
         
     ranked_jobs = gemini_rankings['ranked_jobs']
     jobs_to_process = ranked_jobs[:GEMINI_TOP_N]
-    original_jobs_map = {job['id']: job for job in filtered_jobs}
+    original_jobs_map = {str(job['id']): job for job in filtered_jobs}
     results_list = []
     
     for i, rank_info in enumerate(jobs_to_process):
@@ -141,15 +162,25 @@ def main():
         if not full_job_details:
             print(f"⚠️ Could not find full details for job ID {rank_info['id']}. Skipping.")
             continue
+
         full_job_details['match_reason'] = rank_info.get('match_reason', 'N/A')
+
+        # Step 1: Try AI tailoring
         modified_latex = generate_latex_resume(source_latex, full_job_details)
         generation_failed = False
-        latex_to_compile = modified_latex
+        latex_to_compile = modified_latex if modified_latex else source_latex
         if not modified_latex:
             print(f"⚠️ AI resume generation failed for '{full_job_details.get('title')}'. Falling back to the original resume.")
             generation_failed = True
-            latex_to_compile = source_latex
+
+        # Step 2: Try PDF compilation
         pdf_path = create_resume_pdf(latex_to_compile, full_job_details)
+        if not pdf_path:
+            print(f"❌ PDF compilation failed for '{full_job_details.get('title')}'. Using original resume as fallback.")
+            generation_failed = True
+            pdf_path = create_resume_pdf(source_latex, full_job_details)
+
+        # Step 3: Always add result if we have *some* PDF
         if pdf_path:
             results_list.append({
                 'job_details': full_job_details,
@@ -157,10 +188,7 @@ def main():
                 'generation_failed': generation_failed
             })
         else:
-            print(f"❌ PDF compilation failed for '{full_job_details.get('title')}'. This job will not be included in the email.")
-        if i < len(jobs_to_process) - 1:
-            print(f"🕒 Waiting for {API_CALL_DELAY_SECONDS} seconds to respect API rate limits...")
-            time.sleep(API_CALL_DELAY_SECONDS)
+            print(f"❌ Could not generate even the fallback PDF for '{full_job_details.get('title')}'. Skipping.")
 
 
     if results_list:

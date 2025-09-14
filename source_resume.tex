@@ -1,0 +1,285 @@
+\documentclass[a4paper,10pt]{article}
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\usepackage[english]{babel}
+\usepackage{tabularx}
+\input{glyphtounicode}
+
+\hypersetup{
+    pdfauthor={Parth Jain},
+    pdftitle={Resume},
+    pdfsubject={Software Engineering, AI, Data Science},
+    pdfkeywords={Python, AI, Machine Learning, Cloud, Android, TensorFlow, NLP, AWS}
+}
+
+
+%----------FONT OPTIONS----------
+% sans-serif
+% \usepackage[sfdefault]{FiraSans}
+\usepackage[sfdefault]{roboto}
+% \usepackage[sfdefault]{noto-sans}
+% \usepackage[default]{sourcesanspro}
+
+% serif
+% \usepackage{CormorantGaramond}
+% \usepackage{charter}
+
+
+\pagestyle{fancy}
+\fancyhf{} % clear all header and footer fields
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Adjust margins
+\addtolength{\oddsidemargin}{-0.5in}
+\addtolength{\evensidemargin}{-0.5in}
+\addtolength{\textwidth}{1in}
+\addtolength{\topmargin}{-.5in}
+\addtolength{\textheight}{1in}
+
+\urlstyle{same}
+
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+% Sections formatting
+\titleformat{\section}{
+  \vspace{-4pt}\scshape\raggedright\large
+}{}{0em}{}[\color{black}\titlerule \vspace{-5pt}]
+
+\setlist[itemize]{itemsep=1pt}
+
+% Ensure that generate pdf is machine readable/ATS parsable
+\pdfgentounicode=1
+
+%-------------------------
+% Custom commands
+\newcommand{\resumeItem}[1]{
+  \item\small{
+    {#1 \vspace{-2pt}}
+  }
+}
+
+\newcommand{\resumeSubheading}[4]{
+  \vspace{1.5pt}\item
+    \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
+      \textbf{#1} & #2 \\
+      \textit{\small#3} & \textit{\small #4} \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeSubSubheading}[2]{
+    \item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+      \textit{\small#1} & \textit{\small #2} \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeProjectHeading}[2]{
+    \item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+      \small#1 & #2 \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeSubItem}[1]{\resumeItem{#1}\vspace{-4pt}}
+
+\renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
+
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0.15in, label={}]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-5pt}}
+
+%-------------------------------------------
+%%%%%%  RESUME STARTS HERE  %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\begin{document}
+
+%----------HEADING----------
+% \begin{tabular*}{\textwidth}{l@{\extracolsep{\fill}}r}
+%   \textbf{\href{http://sourabhbajaj.com/}{\Large Sourabh Bajaj}} & Email : \href{mailto:sourabh@sourabhbajaj.com}{sourabh@sourabhbajaj.com}\\
+%   \href{http://sourabhbajaj.com/}{http://www.sourabhbajaj.com} & Mobile : +1-123-456-7890 \\
+% \end{tabular*}
+
+\begin{center}
+    \textbf{\Huge \scshape Parth Jain} \\ \vspace{1pt}
+    \small +91 9923398548 $|$ \href{mailto:parthjain1812@gmail.com}{\underline{parthjain1812@gmail.com}} $|$ 
+    \href{https://linkedin.com/in/parthjain18}{\underline{linkedin.com/in/parthjain18}} $|$
+    \href{https://github.com/parthjain18}{\underline{github.com/parthjain18}} $|$
+    \href{https://parthjain.works}{\underline{parthjain.works}}
+\end{center}
+
+
+%-----------EDUCATION-----------
+\section{Education}
+  \resumeSubHeadingListStart
+    \resumeSubheading
+      {Atharva College of Engineering}{GPA: 9.06}
+      {Bachelor of Engineering in Information Technology, Honours in Data Science}{Dec. 2021 -- May 2025}
+    \resumeSubheading
+      {Higher Secondary Certificate
+ (XII)}{Percentage: 93.17\%}
+      {Science - PCM, Maharashtra State Board}{2021}
+    \resumeSubheading
+      {Secondary School Certificate
+ (X)}{Percentage: 94\%}
+      {Sundaram Central School - CBSE}{2019}
+  \resumeSubHeadingListEnd
+
+%-----------EXPERIENCE-----------
+\section{Experience}
+  \resumeSubHeadingListStart
+
+    \resumeSubheading {AI-ML Intern} {July 2025 -- Current} {PGAGI} {Remote}
+    \resumeItemListStart
+        \resumeItem{Working on backend projects with LLM integrations.}
+        \resumeItem{Using libraries like FastAPI, Langchain, and integrating with cloud services to develop scalable AI applications.}
+    \resumeItemListEnd
+
+    \resumeSubheading {Research Intern} {May 2025 -- June 2025} {e-Yantra, IIT Bombay}{Powai, Mumbai}
+    \resumeItemListStart
+        \resumeItem{Working on \textbf{Systematic Literature Review} for automating \textbf{Thematic Analysis} or \textbf{Qualitative Analysis} using AI tools.}
+        \resumeItem{Developing a tool to automate the process of conducting thematic analysis using \textbf{LLMs}.}
+    \resumeItemListEnd
+    
+
+    \resumeSubheading
+      {Data Analysis and Research Intern}{May 2024 -- July 2024}
+      {e-Yantra, IIT Bombay}{Powai, Mumbai}
+      \resumeItemListStart
+        \resumeItem{Research findings were published in Springer as part of COMPUTE 2024.}
+        % \resumeItem{Worked on a research project to analyze users' behaviour in a Computer Based Learning Environment.}
+        \resumeItem{Developed a data collection pipeline from video recordings using \textbf{OpenCV, OCR and Pandas} that increased the volume of the usable data by over 200\%.}
+        \resumeItem{Explored ways to analyse and visualize the log data using various types of graphs using tools like Celonis and Matplotlib.}
+      \resumeItemListEnd
+      
+% -----------Multiple Positions Heading-----------
+   % \resumeSubSubheading
+   %  {Software Engineer I}{Oct 2014 - Sep 2016}
+   %  \resumeItemListStart
+   %     \resumeItem{Apache Beam}
+   %       {Apache Beam is a unified model for defining both batch and streaming data-parallel processing pipelines}
+   %  \resumeItemListEnd
+   % \resumeSubHeadingListEnd
+%-------------------------------------------
+
+
+
+    % \resumeSubheading
+    %   {Backend Development Intern}{Dec 2023 -- Jan 2024}
+    %   {Engaze}{Remote}
+    %   \resumeItemListStart
+    %     \resumeItem{Worked on data modeling and creating and testing APIs using \textbf{Node JS, and Mongo DB} for a social media startup called Engaze.}
+    %   \resumeItemListEnd
+
+      \resumeSubheading
+      {Android Development Intern}{July 2023 -- October 2023}
+      {Shreemati Nathibai Damodar Thackersey (SNDT) Women's University}{Remote}
+      \resumeItemListStart
+        \resumeItem{Built an android application using \textbf{Kotlin and Jetpack Compose} Library called \emph {COPD-Asthma Healthcare}.}
+        \resumeItem{The application was used by \textbf{hundreds of patients} as part of research on healthcare interventions for COPD and asthma management.}
+        \resumeItem{I worked with \textbf{location services, Google Firebase, Geofencing API, Weather API}, etc.}
+    \resumeItemListEnd
+
+  \resumeSubHeadingListEnd
+
+
+%-----------PUBLICATIONS-----------
+\section{Publications}
+\resumeSubHeadingListStart
+    \resumeSubheading
+      {\parbox[t]{0.85\textwidth}{\textbf{“Enhancing and Analyzing Log Generation for Collaborative Problem-Solving Activities: Video Analysis and OCR Techniques”} \\ \vspace{-8pt}}}{}
+      {COMPUTE 2024, ACM India Conference, Springer}{March 2025}
+
+    \resumeItemListStart
+      \resumeItem{Published in Springer Nature: \href{https://doi.org/10.1007/978-3-031-84391-4_11}{DOI: 10.1007/978-3-031-84391-4\_11}.}
+      \resumeItem{Presented at COMPUTE 2024, IIT Gandhinagar, organized by ACM India and iSIGCSE.}
+      \resumeItem{Developed log generation methods to track user behavior patterns in collaborative problem-solving.}
+    \resumeItemListEnd
+\resumeSubHeadingListEnd
+
+\section{Achievements and Certifications}
+  \resumeSubHeadingListStart
+    \resumeItem{Secured \textbf{AIR 5} among 460 other teams at E-Yantra Robotics Competition, at IIT Bombay.}
+    \resumeItem{\textbf{Winner} of UNPLUGGED 2.0 hackathon at Dwarkadas J. Sanghvi College of Engineering.}
+    \resumeItem{Secured \textbf{5th} position among 35+ other teams appearing for Know Code hackathon at K J Somaiya Institute of Technology.}
+    \resumeItem{Completed \href{https://coursera.org/share/db6d4d3247d7d7228cf46ae01847019a}{\textbf{Supervised Machine Learning: Regression and Classification}}}from DeepLearning.AI on Coursera. 
+    \resumeItem{Completed \href{https://coursera.org/share/db7fac110d95f9acd62b6d3373604e06}{\textbf{Advanced Machine Learning Algorithms}}} from DeepLearning.AI on Coursera.
+  \resumeSubHeadingListEnd
+
+  
+    %   \begin{itemize}
+    %     \setlength\itemsep{-0.2em}
+    %     \item Secured \textbf{AIR 5} among 460 teams at E-Yantra Robotics Competition, IIT Bombay
+    %     \item Secured \textbf{5th} position among 35+ teams in Know Code Hackathon, K J Somaiya Institute of Technology
+    %     \item Selected among the \textbf{top 10} teams for ACE Hacks, a hackathon organized at Atharva College of Engineering
+    % \end{itemize}
+
+
+%-----------PROJECTS-----------
+\section{Projects}
+    \resumeSubHeadingListStart
+        \resumeProjectHeading
+          {\textbf{RAG-Based System for Enhanced Information Retrieval of Browsing Activities} $|$ \emph{Python, RAG, LLM, BLIP}}{Aug 2024 -- Present}
+          \resumeItemListStart
+            \resumeItem{Developed a system using \textbf{RAG} and \textbf{LLMs} to enhance productivity through continuous screenshot capture, real-time image captioning, and browser history tracking.}
+            \resumeItem{Streamlined information retrieval by creating structured timelines of user activities.}
+          \resumeItemListEnd
+        
+      \resumeProjectHeading
+          {\textbf{ElderEase} $|$ \emph{Kotlin, React, MongoDB, Fast API, LangChain, AI agents}}{ Dec 2024 -- Jan 2025}
+          \resumeItemListStart
+            \resumeItem{An app for elderly people where users(elders) can use the app to chat with their schedule or get any medicinal or general information using a \textbf{ReAct-Based AI agent built using LangChain}.}
+            \resumeItem{A website for their relatives and doctors to manage their schedules.}
+          \resumeItemListEnd
+          
+      % \resumeProjectHeading
+      %     {\textbf{Vanguard} $|$ \emph{Machine Learning, Image Processing, GIS, Build-a-Bot, Shortest Path Algorithm}}{Sep 2023 -- Mar 2024}
+      %     \resumeItemListStart
+      %       \resumeItem{A \textbf{line follower} robot with wireless communication using \textbf{web sockets}.}
+      %       \resumeItem{Implemented \textbf{Transfer learning} to train a robust \textbf{Image Classification model} for noisy low resolution images (70px x 70px).}
+      %       \resumeItem{Implemented Shortest path Algorithm; \textbf{Dijkstra's Algorithm} for path finding and worked with \textbf{QGIS} to plot the live location of the robot as it moved across the arena.}
+      %     \resumeItemListEnd
+
+      
+        % \resumeProjectHeading
+        %   {\textbf{Fluent Flow - A cross platform live translation app} $|$ \emph{Flutter, Dart, Python, LLM}}{Aug 2024 -- Present}
+        %   \resumeItemListStart
+        %     \resumeItem{Developed an app that translate live conversations and provides appropriate suggestions as the user }
+        %     \resumeItem{Streamlined information retrieval by creating structured timelines of user activities and leveraging advanced metadata generation for context-aware responses.}
+        %   \resumeItemListEnd
+          
+        
+          
+    \resumeSubHeadingListEnd
+
+
+
+%
+%-----------PROGRAMMING SKILLS-----------
+\section{Technical Skills}
+ \begin{itemize}[leftmargin=0.15in, label={}]
+    \small{\item{
+     \textbf{Languages}{: Python, Kotlin, Dart, C/C++, SQL, JavaScript, Java, HTML/CSS} \\
+     \textbf{Skills}{: }
+     \textbf{Frameworks}{: React, Node.js, Flask, Flutter, FastAPI, LangChain} \\
+     \textbf{Developer Tools}{: Git, Docker, Google Cloud Platform, AWS} \\
+     \textbf{Libraries}{: Jetpack Compose UI library, OpenCV, Tensorflow, Keras, Pandas, NumPy, Matplotlib, Seaborn, Scikit-Learn, NLTK}
+    }}
+ \end{itemize}
+
+
+%-------------------------------------------
+\end{document}

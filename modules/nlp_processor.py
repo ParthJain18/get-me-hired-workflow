@@ -27,5 +27,5 @@ def filter_jobs_by_similarity(jobs_list, resume_text):
     top_jobs_df = df.sort_values(
         by='similarity_score', ascending=False).head(COSINE_FILTER_TOP_N)
 
-    print(f"? Filtered down to the top {len(top_jobs_df)} most relevant jobs.")
+    print(f"Filtered down to the top {len(top_jobs_df)} most relevant jobs.")
     return top_jobs_df.to_dict('records')

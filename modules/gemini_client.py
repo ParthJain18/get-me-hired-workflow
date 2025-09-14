@@ -24,8 +24,8 @@ def _call_gemini(prompt, response_schema=None, model_override=None):
     try:
         config = types.GenerateContentConfig()
         if response_schema:
-            config['response_mime_type'] = 'application/json' # type: ignore
-            config['response_schema'] = response_schema # type: ignore
+            config.response_mime_type = 'application/json'
+            config.response_schema = response_schema
             
         response = client.models.generate_content(
             model=model_override if model_override else MODEL_NAME,

@@ -10,3 +10,6 @@ wheels/
 .venv
 
 .env
+
+generated_resumes/
+processed_jobs.json

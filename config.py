@@ -1,18 +1,18 @@
-SEARCH_TERMS = ["Software Development Engineer", "Backend Engineer", "AI ML Engineer", "AI Engineer"]
-LOCATIONS = ["Mumbai, India", "Bangalore, India", "Pune, India", "Remote"]
+SEARCH_TERMS = ["Software Development Engineer", "Backend Engineer", "AI ML Engineer", "Data Science"]
+LOCATIONS = ["Mumbai, India", "Remote"]
 MIN_SALARY_INR = 800000 # Example: 8 Lakhs per annum
 MIN_EXPERIENCE_YEARS = 0
-MAX_EXPERIENCE_YEARS = 2
+MAX_EXPERIENCE_YEARS = 1
 
-JOB_SITES = ["linkedin", "indeed"] # Sites supported by JobSpy
+JOB_SITES = ["linkedin", "indeed", "google", "naukri", "glassdoor"] # Sites supported by JobSpy
 COUNTRY_INDEED = "India" # Country for Indeed searches
-USE_PROXIES_IN_WORKFLOW = True # Set to True to enable proxy usage if PROXY_LIST is set in .env
+USE_PROXIES_IN_WORKFLOW = False # Set to True to enable proxy usage if PROXY_LIST is set in .env
 
 RESULTS_WANTED = 30
 COSINE_FILTER_TOP_N = 20
 GEMINI_TOP_N = 10
 MODEL_NAME = "gemini-2.5-pro"
-CLASSIFICATION_MODEL_NAME = "gemini-2.5-flash" # Will be used to find the required experience level
+CLASSIFICATION_MODEL_NAME = "gemini-2.0-flash" # Will be used to find the required experience level
 API_CALL_DELAY_SECONDS = 20 # Delay between Gemini 2.5 Pro API calls to avoid rate limits
 
 SOURCE_RESUME_PATH = "source_resume.tex"

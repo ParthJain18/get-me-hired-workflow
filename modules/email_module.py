@@ -67,7 +67,7 @@ def _send_summary_email(results):
     smtp_port = os.getenv("EMAIL_SMTP_PORT")
     sender_addr = os.getenv("EMAIL_SENDER_ADDRESS")
     sender_pass = os.getenv("EMAIL_SENDER_PASSWORD")
-    recipient_addr = os.getenv("EMAIL_RECIPIENT_ADDRESS")
+    recipient_addr = os.getenv("EMAIL_TO")
 
     if not all([smtp_server, smtp_port, sender_addr, sender_pass, recipient_addr]):
         print("❌ Email configuration is incomplete in your .env file. Cannot send email.")

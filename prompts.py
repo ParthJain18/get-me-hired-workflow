@@ -33,10 +33,10 @@ def get_ranking_prompt(resume_summary, job_postings_json):
     """
 
 def get_latex_generation_prompt(latex_source, job_title, job_company, job_description):
-    """Generates a prompt for Gemini to tailor and return a full LaTeX resume."""
+    """Generates a prompt for Gemini to subtly tune and return a full LaTeX resume."""
     return f"""
     You are a world-class career coach and an expert in LaTeX resume formatting.
-    Your task is to tailor my resume for a specific job application.
+    Your task is to tailor my existing resume *only by tuning the content* for a specific job application.
 
     **My Original LaTeX Resume:**
     ```latex
@@ -49,13 +49,14 @@ def get_latex_generation_prompt(latex_source, job_title, job_company, job_descri
     - **Description:** {job_description}
 
     **Your Instructions:**
-    1.  **Modify the Professional Summary:** Rewrite the summary section (typically at the top) to be 2-3 sentences long, directly targeting the key requirements in the job description.
-    2.  **Refine the Skills Section:** Identify the 5-7 most critical skills or technologies mentioned in the job description and ensure they are prominently featured in my skills section. You may add or reorder skills.
-    3.  **Preserve Formatting:** Do NOT alter the overall structure, layout, fonts, or formatting of my LaTeX document. The changes should be surgical and focused only on the content of the summary and skills.
-    4.  **IMPORTANT - Ensure Valid LaTeX:** Pay close attention to the job description content you integrate. You MUST correctly escape any special LaTeX characters (e.g., replace `_` with `\\_`, `&` with `\\&`, `%` with `\\%`). The final output must be a fully compilable LaTeX document.
-    
+    1. **Subtle Content Adjustments Only:** Do NOT add new sections (e.g., summary, objective) or remove existing ones. Instead, refine and rephrase the wording of my current sections so they better align with the job description. Keep the length of each section roughly the same.
+    2. **Skills Section:** Reorder, emphasize, or slightly reword the skills to highlight the 5–7 most relevant ones for the job. Only add a skill if it clearly appears in both my resume and the job description.
+    3. **Experience/Projects:** Where appropriate, subtly adjust bullet points or phrasing to emphasize responsibilities or achievements that align with the job requirements. Do not increase the total number of bullets or expand sections significantly.
+    4. **Preserve Structure and Formatting:** Do NOT alter the LaTeX structure, add new environments, or change layout, fonts, or spacing. The result must remain single-page unless the original was already longer.
+    5. **Valid LaTeX:** Ensure correct escaping of LaTeX special characters (`_`, `&`, `%`, etc.). The final output must be a fully compilable LaTeX document.
+
     **Output:**
-    Return ONLY the complete, modified, and valid LaTeX source code for the new resume. Do not include any explanations, apologies, or markdown formatting.
+    Return ONLY the complete, modified, and valid LaTeX source code for the tuned resume. Do not include explanations, comments, or markdown formatting.
     """
 
 def get_experience_classification_prompt(job_title: str, job_description: str) -> str:
