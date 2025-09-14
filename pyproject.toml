@@ -1,0 +1,13 @@
+[project]
+name = "get-me-hired-workflow"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "google-genai>=1.36.0",
+    "pandas>=2.3.2",
+    "python-dotenv>=1.1.1",
+    "python-jobspy>=1.1.82",
+    "scikit-learn>=1.7.2",
+]
