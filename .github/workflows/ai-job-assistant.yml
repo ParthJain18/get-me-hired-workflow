@@ -38,9 +38,10 @@ jobs:
 
       - name: Restore parsed resume file if present
         run: |
-          if [ -f parsed-resume/parsed_resume.txt ]; then
-            mv parsed-resume/parsed_resume.txt parsed_resume.txt
-            echo "Restored parsed_resume.txt from artifact"
+          # Look for the new .json file
+          if [ -f parsed-resume-json/parsed_resume.json ]; then
+            mv parsed-resume-json/parsed_resume.json parsed_resume.json
+            echo "Restored parsed_resume.json from artifact"
           else
             echo "No previous parsed resume artifact found — will re-parse"
           fi
@@ -106,4 +107,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: parsed-resume
-          path: parsed_resume.txt
+          path: parsed_resume.json

@@ -1,5 +1,7 @@
 import os
 import time
+import json
+import hashlib
 from dotenv import load_dotenv
 from config import SOURCE_RESUME_PATH, PARSED_RESUME_PATH, GEMINI_TOP_N, MIN_EXPERIENCE_YEARS, MAX_EXPERIENCE_YEARS, MIN_SALARY_INR
 from modules.scraper import run_scraper
@@ -12,31 +14,47 @@ from keyword_filter import filter_jobs_by_experience_keywords, should_use_gemini
 
 
 def setup_resume_for_matching():
-    try:
-        source_mod_time = os.path.getmtime(SOURCE_RESUME_PATH)
-        parsed_mod_time = os.path.getmtime(PARSED_RESUME_PATH) if os.path.exists(PARSED_RESUME_PATH) else 0
+    PARSED_RESUME_JSON_PATH = "parsed_resume.json"
 
-        if source_mod_time > parsed_mod_time:
-            print(f"Source resume '{SOURCE_RESUME_PATH}' is new or updated. Parsing for matching...")
-            with open(SOURCE_RESUME_PATH, 'r', encoding='utf-8') as f:
-                latex_source = f.read()
-            
-            parsed_text = parse_resume(latex_source)
-            if parsed_text:
-                with open(PARSED_RESUME_PATH, 'w', encoding='utf-8') as f:
-                    f.write(parsed_text)
-                return parsed_text
-            else:
-                print("❌ Failed to parse resume. Exiting.")
-                return None
-        else:
-            print("Parsed resume is up-to-date.")
+    try:
+        with open(SOURCE_RESUME_PATH, 'rb') as f:
+            source_bytes = f.read()
+        current_source_hash = hashlib.md5(source_bytes).hexdigest()
+        source_latex = source_bytes.decode('utf-8')
+
     except FileNotFoundError:
         print(f"❌ Error: Source resume file not found at '{SOURCE_RESUME_PATH}'. Please create it.")
         return None
 
-    with open(PARSED_RESUME_PATH, 'r', encoding='utf-8') as f:
-        return f.read()
+    cached_data = {}
+    if os.path.exists(PARSED_RESUME_JSON_PATH):
+        with open(PARSED_RESUME_JSON_PATH, 'r', encoding='utf-8') as f:
+            try:
+                cached_data = json.load(f)
+            except json.JSONDecodeError:
+                print("⚠️ Warning: Could not decode parsed_resume.json. Will re-parse.")
+
+    cached_hash = cached_data.get("source_hash")
+
+    if current_source_hash == cached_hash:
+        print("✅ Parsed resume is up-to-date (source hash matches).")
+        return cached_data.get("parsed_text")
+    else:
+        print(f"Source resume '{SOURCE_RESUME_PATH}' has changed. Parsing for matching...")
+        parsed_text = parse_resume(source_latex)
+        if parsed_text:
+            new_data = {
+                "source_hash": current_source_hash,
+                "parsed_text": parsed_text
+            }
+            with open(PARSED_RESUME_JSON_PATH, 'w', encoding='utf-8') as f:
+                json.dump(new_data, f, indent=2)
+            print("✅ Resume parsed and new hash saved.")
+            return parsed_text
+        else:
+            print("❌ Failed to parse resume. Using previous version if available.")
+            return cached_data.get("parsed_text")
+        
 
 def main():
     print("--- Starting AI Job Application Assistant ---")

@@ -13,3 +13,4 @@ wheels/
 
 generated_resumes/
 processed_jobs.json
+parsed_resume.json
