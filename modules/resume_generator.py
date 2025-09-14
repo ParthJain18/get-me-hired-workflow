@@ -21,8 +21,14 @@ def create_resume_pdf(modified_latex_content, job):
         f.write(modified_latex_content)
 
     try:
-        subprocess.run(
-            ['pdflatex', '-output-directory', OUTPUT_DIR, tex_filepath],
+        result = subprocess.run(
+            [
+                'pdflatex',
+                '-interaction=nonstopmode',
+                '-halt-on-error',
+                '-output-directory', OUTPUT_DIR,
+                tex_filepath
+            ],
             check=True,
             capture_output=True,
             text=True,
