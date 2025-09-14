@@ -63,7 +63,7 @@ def _create_summary_html_body(results):
     """
 
 def _send_summary_email(results):
-    smtp_server = os.getenv("EMAIL_SMTP_SERVER")
+    smtp_server = os.getenv("EMAIL_SMTP_HOST")
     smtp_port = os.getenv("EMAIL_SMTP_PORT")
     sender_addr = os.getenv("EMAIL_SENDER_ADDRESS")
     sender_pass = os.getenv("EMAIL_SENDER_PASSWORD")

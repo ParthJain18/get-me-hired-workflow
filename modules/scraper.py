@@ -35,6 +35,7 @@ def run_scraper():
                 results_wanted=RESULTS_WANTED,
                 country_indeed=COUNTRY_INDEED,
                 proxies=proxies_to_use,
+                hours_old=168,
                 # ca_cert=ca_cert_to_use
             )
             if jobs_df is not None and not jobs_df.empty:

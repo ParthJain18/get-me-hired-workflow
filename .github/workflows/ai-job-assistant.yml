@@ -6,7 +6,7 @@ on:
     - cron: "30 4 */2 * *" # every 2 days at 10:00 IST (adjust to */3 if you prefer every 3 days)
 
 jobs:
-  run-job-assistant:
+  run-job-scraping:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -16,8 +16,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: processed-jobs-tracker
-          path: processed-jobs-tracker
-          if-no-files-found: ignore
+          path: .
+        continue-on-error: true
 
       - name: Restore tracker file if present
         run: |
@@ -29,23 +29,33 @@ jobs:
           fi
         shell: bash
 
-      - name: Set up Python 3.11
+      - name: Download parsed resume artifact (if any)
+        uses: actions/download-artifact@v4
+        with:
+          name: parsed-resume
+          path: .
+        continue-on-error: true
+
+      - name: Restore parsed resume file if present
+        run: |
+          if [ -f parsed-resume/parsed_resume.txt ]; then
+            mv parsed-resume/parsed_resume.txt parsed_resume.txt
+            echo "Restored parsed_resume.txt from artifact"
+          else
+            echo "No previous parsed resume artifact found — will re-parse"
+          fi
+        shell: bash
+
+      - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
-      - name: Cache pip
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+      - name: Install uv
+        uses: astral-sh/setup-uv@v1
 
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+      - name: Install dependencies with uv
+        run: uv sync
 
       - name: Install TeX Live + fonts (optimized)
         run: |
@@ -57,7 +67,6 @@ jobs:
             texlive-fonts-extra \
             texlive-font-utils \
             fonts-roboto || true
-        # fonts-roboto may not be available on every runner but the above installs the standard TeXLive font packages
         shell: bash
 
       - name: Create .env from repository secrets
@@ -65,7 +74,7 @@ jobs:
           cat > .env <<EOF
           GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
           ZYTE_API_KEY=${{ secrets.ZYTE_API_KEY }}
-          EMAIL_SMTP_SERVER=${{ secrets.EMAIL_SMTP_SERVER }}
+          EMAIL_SMTP_HOST=${{ secrets.EMAIL_SMTP_HOST }}
           EMAIL_SMTP_PORT=${{ secrets.EMAIL_SMTP_PORT }}
           EMAIL_SENDER_ADDRESS=${{ secrets.EMAIL_SENDER_ADDRESS }}
           EMAIL_SENDER_PASSWORD=${{ secrets.EMAIL_SENDER_PASSWORD }}
@@ -73,7 +82,7 @@ jobs:
           EOF
         shell: bash
 
-      - name: Ensure processed_jobs.json exists (avoid upload failure)
+      - name: Ensure processed_jobs.json exists
         run: |
           if [ ! -f processed_jobs.json ]; then
             echo "[]" > processed_jobs.json
@@ -83,9 +92,8 @@ jobs:
 
       - name: Run AI Job Application Assistant
         env:
-          # In case your code reads env vars directly; .env is also present for load_dotenv
           PYTHONUNBUFFERED: 1
-        run: python main.py
+        run: uv run python main.py
         shell: bash
 
       - name: Upload tracker artifact
@@ -93,4 +101,9 @@ jobs:
         with:
           name: processed-jobs-tracker
           path: processed_jobs.json
-          retention-days: 30
+
+      - name: Upload parsed resume artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: parsed-resume
+          path: parsed_resume.txt
