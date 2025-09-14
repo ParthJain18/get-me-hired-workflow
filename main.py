@@ -6,11 +6,11 @@ from dotenv import load_dotenv
 from config import SOURCE_RESUME_PATH, PARSED_RESUME_PATH, GEMINI_TOP_N, MIN_EXPERIENCE_YEARS, MAX_EXPERIENCE_YEARS, MIN_SALARY_INR
 from modules.scraper import run_scraper
 from modules.nlp_processor import filter_jobs_by_similarity
-from modules.gemini_client import parse_resume, get_job_rankings, generate_latex_resume, classify_experience_level 
-from modules.resume_generator import create_resume_pdf
+from modules.gemini_client import parse_resume, get_job_rankings, generate_latex_resume, classify_experience_level, condense_latex_resume
+from modules.resume_generator import create_resume_pdf, get_pdf_page_count
 from modules.email_module import send_notification
 from modules.tracker import load_processed_jobs, update_processed_jobs
-from keyword_filter import filter_jobs_by_experience_keywords, should_use_gemini_classification, filter_for_entry_level_jobs
+from keyword_filter import filter_jobs_by_experience, should_use_gemini_classification, filter_for_entry_level_jobs
 
 
 def setup_resume_for_matching():
@@ -105,7 +105,7 @@ def main():
             print("--- Pipeline finished: No new jobs match your salary criteria. ---")
             return
     
-    keyword_filtered_jobs = filter_jobs_by_experience_keywords(new_jobs, MAX_EXPERIENCE_YEARS)
+    keyword_filtered_jobs = filter_jobs_by_experience(new_jobs, MAX_EXPERIENCE_YEARS)
 
     if not keyword_filtered_jobs:
         print("--- Pipeline finished: No jobs match your experience criteria after keyword filtering. ---")
@@ -192,21 +192,36 @@ def main():
             generation_failed = True
 
         # Step 2: Try PDF compilation
-        pdf_path = create_resume_pdf(latex_to_compile, full_job_details)
-        if not pdf_path:
-            print(f"❌ PDF compilation failed for '{full_job_details.get('title')}'. Using original resume as fallback.")
-            generation_failed = True
-            pdf_path = create_resume_pdf(source_latex, full_job_details)
+        pdf_path = create_resume_pdf(final_latex, full_job_details)
+        page_count = get_pdf_page_count(pdf_path)
+        print(f"   📄 Compiled PDF has {page_count} page(s).")
 
-        # Step 3: Always add result if we have *some* PDF
-        if pdf_path:
-            results_list.append({
-                'job_details': full_job_details,
-                'pdf_path': pdf_path,
-                'generation_failed': generation_failed
-            })
-        else:
-            print(f"❌ Could not generate even the fallback PDF for '{full_job_details.get('title')}'. Skipping.")
+        # Step 3: Second Attempt (Condensing), if needed
+        if page_count > 1:
+            print(f"   ⚠️ Resume is {page_count} pages. Attempt 2: Condensing content...")
+            condensed_latex = condense_latex_resume(final_latex)
+            
+            if condensed_latex:
+                final_latex = condensed_latex
+                # Re-compile the PDF with the condensed version
+                pdf_path = create_resume_pdf(final_latex, full_job_details)
+                final_page_count = get_pdf_page_count(pdf_path)
+                print(f"   ✅ Condensing successful. Final PDF has {final_page_count} page(s).")
+                if final_page_count > 1:
+                    print("   ❌ Condensing failed to reduce to one page. Using the shortened version anyway.")
+            else:
+                print("   ❌ AI condensing failed. Using the two-page version as a fallback.")
+                generation_failed = True
+
+            # Step 4: Add result to list (this logic is now cleaner)
+            if pdf_path:
+                results_list.append({
+                    'job_details': full_job_details,
+                    'pdf_path': pdf_path,
+                    'generation_failed': generation_failed
+                })
+            else:
+                print(f"❌ Critical Error: Could not generate any PDF for '{full_job_details.get('title')}'. Skipping.")
 
 
     if results_list:

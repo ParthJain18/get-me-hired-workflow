@@ -60,6 +60,8 @@ pydantic==2.11.9
     #   python-jobspy
 pydantic-core==2.33.2
     # via pydantic
+pypdf2==3.0.1
+    # via get-me-hired-workflow
 python-dateutil==2.9.0.post0
     # via pandas
 python-dotenv==1.1.1

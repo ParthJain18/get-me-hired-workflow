@@ -1,6 +1,21 @@
 import os
 import subprocess
 from config import OUTPUT_DIR
+from PyPDF2 import PdfReader
+
+
+def get_pdf_page_count(pdf_path):
+    """Returns the number of pages in a PDF file."""
+    if not pdf_path or not os.path.exists(pdf_path):
+        return 0
+    try:
+        with open(pdf_path, 'rb') as f:
+            reader = PdfReader(f)
+            return len(reader.pages)
+    except Exception as e:
+        print(f"⚠️ Could not read PDF page count for {pdf_path}: {e}")
+        return 0
+    
 
 def create_resume_pdf(modified_latex_content, job):
     """
@@ -50,3 +65,8 @@ def create_resume_pdf(modified_latex_content, job):
     except subprocess.TimeoutExpired:
         print(f"❌ Compilation timed out for {tex_filepath}.")
         return None
+
+# if(__name__ == "__main__"):
+#     with open("./source_resume.tex", 'r', encoding='utf-8') as f:
+#         sample_latex = f.read()
+#     create_resume_pdf(sample_latex, {'company': 'TestCompany', 'title': 'TestTitle'})

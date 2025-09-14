@@ -36,7 +36,7 @@ def get_latex_generation_prompt(latex_source, job_title, job_company, job_descri
     """Generates a prompt for Gemini to subtly tune and return a full LaTeX resume."""
     return f"""
     You are a world-class career coach and an expert in LaTeX resume formatting.
-    Your task is to tailor my existing resume *only by tuning the content* for a specific job application.
+    Your task is to tailor my existing resume for a specific job application, ensuring it remains on a single page.
 
     **My Original LaTeX Resume:**
     ```latex
@@ -49,14 +49,15 @@ def get_latex_generation_prompt(latex_source, job_title, job_company, job_descri
     - **Description:** {job_description}
 
     **Your Instructions:**
-    1. **Subtle Content Adjustments Only:** Do NOT add new sections (e.g., summary, objective) or remove existing ones. Instead, refine and rephrase the wording of my current sections so they better align with the job description. Keep the length of each section roughly the same.
-    2. **Skills Section:** Reorder, emphasize, or slightly reword the skills to highlight the 5–7 most relevant ones for the job. Only add a skill if it clearly appears in both my resume and the job description.
-    3. **Experience/Projects:** Where appropriate, subtly adjust bullet points or phrasing to emphasize responsibilities or achievements that align with the job requirements. Do not increase the total number of bullets or expand sections significantly.
-    4. **Preserve Structure and Formatting:** Do NOT alter the LaTeX structure, add new environments, or change layout, fonts, or spacing. The result must remain single-page unless the original was already longer.
-    5. **Valid LaTeX:** Ensure correct escaping of LaTeX special characters (`_`, `&`, `%`, etc.). The final output must be a fully compilable LaTeX document.
+    1.  **Critical Constraint: The final LaTeX output MUST compile to a single page.** This is your most important instruction. Your primary goal is to be concise. If your edits risk making the content longer, you MUST shorten other parts of the resume to compensate.
+    2.  **Subtle Content Adjustments:** Refine and rephrase the wording of my current sections to align with the job description. Rephrase sentences to be more direct and action-oriented.
+    3.  **Skills Section:** Reorder and slightly reword the skills to highlight the 5–7 most relevant ones.
+    4.  **Experience/Projects:** Subtly adjust bullet points to emphasize achievements that align with the job's requirements. If necessary, combine or shorten bullet points to save space.
+    5.  **Preserve Structure and Formatting:** Do NOT alter the LaTeX structure, add new environments, or change layout, fonts, or spacing.
+    6.  **Valid LaTeX:** Ensure correct escaping of special characters.
 
     **Output:**
-    Return ONLY the complete, modified, and valid LaTeX source code for the tuned resume. Do not include explanations, comments, or markdown formatting.
+    Return ONLY the complete, modified, and valid LaTeX source code.
     """
 
 def get_experience_classification_prompt(job_title: str, job_description: str) -> str:
@@ -73,4 +74,29 @@ def get_experience_classification_prompt(job_title: str, job_description: str) -
     - If only a minimum is given (e.g., "5+ years"), set max_years to 2 years above the minimum.
     - For "entry-level" or "new grad" roles, use 0 for min_years and 1 for max_years.
     - If no experience level is mentioned at all, return 0 for both.
+    """
+
+
+def get_condensing_prompt(failed_latex_source):
+    """
+    Generates a prompt specifically to shorten LaTeX that was too long.
+    """
+    return f"""
+    You are an expert resume editor with a single task: reduce the length of the provided resume to ensure it fits on one page.
+
+    **Critical: The provided LaTeX source code resulted in a two-page document, which is unacceptable.**
+
+    **LaTeX Source to Fix:**
+    ```latex
+    {failed_latex_source}
+    ```
+
+    **Your Instructions:**
+    1.  **Shorten Content:** Your primary goal is to reduce the overall text length by 10%.
+    2.  **Be Ruthless with Edits:** Combine bullet points, rephrase sentences to be more concise, and remove less critical phrases or descriptions. Focus on preserving the most impactful achievements.
+    3.  **Do NOT Change Formatting:** Do not alter the LaTeX structure, commands, packages, or document class. Only edit the text content within the existing structure.
+    4.  **Return Valid LaTeX:** The output must be the complete, valid, and shortened LaTeX source code.
+
+    **Output:**
+    Return ONLY the complete, shortened, and valid LaTeX source code.
     """

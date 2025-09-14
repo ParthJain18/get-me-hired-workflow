@@ -25,8 +25,11 @@ def run_scraper():
         print("⚠️ No proxy configured. Running with local/runner IP.")
 
     all_jobs_df = pd.DataFrame()
+    physical_locations = [loc for loc in LOCATIONS if loc.lower() != 'remote']
+    scrape_for_remote = 'remote' in [loc.lower() for loc in LOCATIONS]
+
     for term in SEARCH_TERMS:
-        for location in LOCATIONS:
+        for location in physical_locations:
             print(f"Scraping for '{term}' in '{location}'...")
             jobs_df = jobspy.scrape_jobs(
                 site_name=JOB_SITES,
@@ -36,14 +39,29 @@ def run_scraper():
                 country_indeed=COUNTRY_INDEED,
                 proxies=proxies_to_use,
                 hours_old=168,
-                # ca_cert=ca_cert_to_use
+            )
+            if jobs_df is not None and not jobs_df.empty:
+                all_jobs_df = pd.concat([all_jobs_df, jobs_df], ignore_index=True)
+
+        if scrape_for_remote:
+            print(f"Scraping for REMOTE '{term}' jobs...")
+            jobs_df = jobspy.scrape_jobs(
+                site_name=JOB_SITES,
+                search_term=term,
+                is_remote=True,
+                results_wanted=RESULTS_WANTED,
+                country_indeed=COUNTRY_INDEED,
+                proxies=proxies_to_use,
+                hours_old=168,
             )
             if jobs_df is not None and not jobs_df.empty:
                 all_jobs_df = pd.concat([all_jobs_df, jobs_df], ignore_index=True)
     
-    print(all_jobs_df.head)
+    if all_jobs_df.empty:
+        print("❌ No jobs found after scraping.")
+        return []
 
     all_jobs_df.drop_duplicates(subset=['job_url'], inplace=True)
-    all_jobs_df['id'] = all_jobs_df['job_url'].apply(lambda x: hash(x))
-    print(f"Scraped a total of {len(all_jobs_df)} unique jobs.")
+    all_jobs_df['id'] = all_jobs_df['job_url'].apply(lambda x: str(hash(x)))
+    print(f"✅ Scraped a total of {len(all_jobs_df)} unique jobs.")
     return all_jobs_df.to_dict('records')

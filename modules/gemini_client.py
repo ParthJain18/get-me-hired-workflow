@@ -3,7 +3,7 @@ import json
 import time
 from google import genai
 from google.genai import types
-from prompts import get_resume_parsing_prompt, get_ranking_prompt, get_latex_generation_prompt, get_experience_classification_prompt
+from prompts import get_resume_parsing_prompt, get_ranking_prompt, get_latex_generation_prompt, get_experience_classification_prompt, get_condensing_prompt
 from models.gemini_output_models import RankingResponse, ExperienceResponse
 from dotenv import load_dotenv
 from config import MODEL_NAME, CLASSIFICATION_MODEL_NAME
@@ -103,6 +103,13 @@ def generate_latex_resume(latex_source, job):
         return modified_latex.strip().replace('```latex', '').replace('```', '')
     return modified_latex
 
+def condense_latex_resume(latex_source):
+    prompt = get_condensing_prompt(latex_source)
+    condensed_latex = _call_gemini(prompt)
+    if condensed_latex:
+        print("✅ Received condensed LaTeX source from Gemini.")
+        return condensed_latex.strip().replace('```latex', '').replace('```', '')
+    return None
 
 def classify_experience_level(job):
     print(f"🧠 Classifying experience for '{job.get('title', 'N/A')}'...")

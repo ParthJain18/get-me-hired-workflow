@@ -1,101 +1,63 @@
 import re
 
-def filter_jobs_by_experience_keywords(jobs_list, max_experience_years=2):
-    """
-    Filter out jobs that are clearly for experienced professionals based on keywords
-    in title and description before using Gemini classification.
-    """
-    print(f"🔍 Pre-filtering jobs using keyword analysis for max {max_experience_years} years experience...")
+def filter_jobs_by_experience(jobs_list, max_experience_years=2):
+    print(f"🔍 Filtering jobs for max {max_experience_years} years experience using enhanced logic...")
     
-    # Keywords that typically indicate senior/experienced positions
     senior_keywords = [
-        # Direct experience indicators
         'senior', 'sr.', 'sr ', 'lead', 'principal', 'staff', 'architect', 
         'manager', 'head of', 'director', 'vp', 'vice president', 'chief',
-        
-        # Level indicators
-        'level 2', 'level 3', 'level 4', 'level 5', # Added level 2
-        'level ii', 'level iii', 'level iv', 'level v', # Added level ii
-        'grade 2', 'grade 3', 'grade 4', 'grade 5', # Added grade 2
-        'l2', 'l3', 'l4', 'l5', # Added l2
-        'ii', 'iii', 'iv', 'v',  # Added ii
-        
-        # Experience-heavy roles
-        'tech lead', 'technical lead',
-        'team lead', 'engineering lead', 'solution architect', 
-        'technical architect', 'enterprise architect',
-        
-        # Management/leadership terms
-        'people manager', 'engineering manager', 'delivery manager',
-        'practice manager', 'engagement manager', 'program manager'
+        'level 3', 'level 4', 'level 5', 'l3', 'l4', 'l5', 'iii', 'iv', 'v'
     ]
     
-    # Keywords that suggest high experience requirements in descriptions
-    experience_phrases = [
-        r'\b(\d+)\+?\s*years?\s*(of\s*)?(experience|exp)\b',  # "5+ years experience"
-        r'\b(\d+)-(\d+)\s*years?\s*(of\s*)?(experience|exp)\b',  # "3-5 years experience"
-        r'\bminimum\s*(\d+)\s*years?\b',  # "minimum 5 years"
-        r'\bat least\s*(\d+)\s*years?\b',  # "at least 4 years"
-        r'\b(\d+)\s*to\s*(\d+)\s*years?\b',  # "4 to 6 years"
-    ]
+    def has_senior_keywords(title):
+        text_to_check = title.lower()
+        for keyword in senior_keywords:
+            pattern = r'\b' + re.escape(keyword) + r'\b'
+            if re.search(pattern, text_to_check):
+                return True
+        return False
     
-    def extract_experience_from_text(text):
-        """Extract minimum experience years from text using regex"""
-        if not text:
-            return 0
-        if not isinstance(text, str):
-            return 0
-            
-        text_lower = text.lower()
-        min_exp = 0
-        
-        for pattern in experience_phrases:
-            matches = re.findall(pattern, text_lower, re.IGNORECASE)
-            for match in matches:
-                if isinstance(match, tuple):
-                    # Handle different tuple structures from different regex patterns
-                    numbers = [int(x) for x in match if x.isdigit()]
-                    if numbers:
-                        min_exp = max(min_exp, min(numbers))
-                elif match.isdigit():
-                    min_exp = max(min_exp, int(match))
-        
-        return min_exp
-    
-    def has_senior_keywords(title, description=""):
-            """Check if title or description contains senior-level keywords using whole word matching."""
-            text_to_check = f"{title} {description}".lower()
-            
-            for keyword in senior_keywords:
-                pattern = r'\b' + re.escape(keyword.lower()) + r'\b'
-                if re.search(pattern, text_to_check):
-                    return True
-            return False
-        
     filtered_jobs = []
     skipped_count = 0
-    
+
     for job in jobs_list:
         title = job.get('title', '')
         description = job.get('description', '')
-        
-        # Check for obvious senior keywords first
-        if has_senior_keywords(title, description):
-            skipped_count += 1
-            print(f"  ❌ Keyword filter: '{title}' - contains senior keywords")
+        job_level = job.get('job_level', '').lower()
+        experience_range = job.get('experience_range') # e.g., (0, 2)
+        job_type = job.get('job_type', '').lower()
+
+        if job_type == 'internship' or job_level == 'entry level':
+            print(f"  ✅ Kept (Entry/Intern): '{title}'")
+            filtered_jobs.append(job)
             continue
-        
-        # Check for explicit experience requirements
+            
+        if job_level and any(level in job_level for level in ['senior', 'lead', 'director', 'manager', 'principal']):
+            print(f"  ❌ Skipped (Structured): '{title}' - Level is '{job.get('job_level')}'")
+            skipped_count += 1
+            continue
+            
+        if experience_range and isinstance(experience_range, tuple) and len(experience_range) == 2:
+            min_req, max_req = experience_range
+            if min_req > max_experience_years:
+                print(f"  ❌ Skipped (Structured): '{title}' - Requires {min_req}-{max_req} years")
+                skipped_count += 1
+                continue
+
+        if has_senior_keywords(title):
+            print(f"  ❌ Skipped (Keyword): '{title}' - Contains senior keywords in title")
+            skipped_count += 1
+            continue
+
         desc_min_exp = extract_experience_from_text(description)
         if desc_min_exp > max_experience_years:
+            print(f"  ❌ Skipped (Regex): '{title}' - Requires {desc_min_exp}+ years in description")
             skipped_count += 1
-            print(f"  ❌ Experience filter: '{title}' - requires {desc_min_exp}+ years")
             continue
-        
-        # Job passed the filters
+            
         filtered_jobs.append(job)
-    
-    print(f"🎯 Keyword filtering complete: {skipped_count} jobs filtered out, {len(filtered_jobs)} remain")
+
+    print(f"🎯 Enhanced filtering complete: {skipped_count} jobs filtered out, {len(filtered_jobs)} remain.")
     return filtered_jobs
 
 def should_use_gemini_classification(jobs_count, threshold=20):
@@ -109,6 +71,51 @@ def should_use_gemini_classification(jobs_count, threshold=20):
         print(f"⚠️  {jobs_count} jobs remaining after keyword filter.")
         print(f"   Consider making keyword filter stricter to reduce Gemini API calls.")
         return True  # You can change this to False to skip Gemini entirely
+
+def filter_jobs_by_location(jobs_list, allowed_locations):
+    """
+    Strictly filters jobs to ensure their location is in the allowed list.
+    Handles both string locations and the structured location dictionary from jobspy.
+    """
+    print(f"📍 Applying strict location filter for: {allowed_locations}")
+    
+    # Normalize allowed locations for case-insensitive comparison
+    allowed_lower = [loc.lower() for loc in allowed_locations]
+    
+    filtered_jobs = []
+    skipped_count = 0
+    
+    for job in jobs_list:
+        job_location_obj = job.get('location') # e.g., {'city': 'Pune', 'state': 'Maharashtra'}
+        
+        if isinstance(job_location_obj, dict):
+            city = (job_location_obj.get('city') or "").lower()
+            state = (job_location_obj.get('state') or "").lower()
+            country = (job_location_obj.get('country') or "").lower()
+            
+            is_match = False
+            for allowed_loc in allowed_lower:
+                if allowed_loc in [city, state, country]:
+                    is_match = True
+                    break
+            
+            if is_match:
+                filtered_jobs.append(job)
+            else:
+                skipped_count += 1
+        
+        # Fallback for older versions or if location is just a string
+        elif isinstance(job_location_obj, str):
+            if any(allowed_loc in job_location_obj.lower() for allowed_loc in allowed_lower):
+                filtered_jobs.append(job)
+            else:
+                skipped_count += 1
+        else:
+            # If location is missing, we might skip it or keep it based on preference
+            skipped_count += 1
+            
+    print(f"🎯 Location filtering complete: {skipped_count} jobs removed, {len(filtered_jobs)} remain.")
+    return filtered_jobs
 
 # Alternative: Even stricter keyword filter for entry-level positions
 def filter_for_entry_level_jobs(jobs_list):
