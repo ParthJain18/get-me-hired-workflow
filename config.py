@@ -1,5 +1,5 @@
 SEARCH_TERMS = ["Software Development Engineer", "Backend Engineer", "AI ML Engineer", "Data Science"]
-LOCATIONS = ["Mumbai", "Pune", "Bangalore", "Remote"]
+LOCATIONS = ["Mumbai", "Bangalore", "Remote"]
 MIN_SALARY_INR = 800000 # Example: 8 Lakhs per annum
 HOURS_PER_YEAR = 2080 # 40 hours/week * 52 weeks
 USD_TO_INR_RATE = 85.0 # Example conversion rate, adjust as needed
