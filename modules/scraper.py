@@ -7,6 +7,7 @@ from config import (
 
 ZYTE_CERT_PATH = "zyte-proxy-ca.crt"
 
+
 def run_scraper():
     print("Starting job scrape...")
 
@@ -56,7 +57,8 @@ def run_scraper():
             )
             if jobs_df is not None and not jobs_df.empty:
                 all_jobs_df = pd.concat([all_jobs_df, jobs_df], ignore_index=True)
-    
+
+    # all_jobs_df.to_csv("all_scraped_jobs.csv", index=False)
     if all_jobs_df.empty:
         print("❌ No jobs found after scraping.")
         return []
@@ -65,3 +67,7 @@ def run_scraper():
     all_jobs_df['id'] = all_jobs_df['job_url'].apply(lambda x: str(hash(x)))
     print(f"✅ Scraped a total of {len(all_jobs_df)} unique jobs.")
     return all_jobs_df.to_dict('records')
+
+
+if __name__ == "__main__":
+    run_scraper()

@@ -1,6 +1,8 @@
 SEARCH_TERMS = ["Software Development Engineer", "Backend Engineer", "AI ML Engineer", "Data Science"]
 LOCATIONS = ["Mumbai, India", "Remote"]
 MIN_SALARY_INR = 800000 # Example: 8 Lakhs per annum
+HOURS_PER_YEAR = 2080 # 40 hours/week * 52 weeks
+USD_TO_INR_RATE = 85.0 # Example conversion rate, adjust as needed
 MIN_EXPERIENCE_YEARS = 0
 MAX_EXPERIENCE_YEARS = 1
 
@@ -16,7 +18,7 @@ CLASSIFICATION_MODEL_NAME = "gemini-2.0-flash" # Will be used to find the requir
 API_CALL_DELAY_SECONDS = 20 # Delay between Gemini 2.5 Pro API calls to avoid rate limits
 
 SOURCE_RESUME_PATH = "source_resume.tex"
-PARSED_RESUME_PATH = "parsed_resume.txt"
+PARSED_RESUME_PATH = "parsed_resume.json"
 OUTPUT_DIR = "generated_resumes"
 PROCESSED_JOBS_PATH = "processed_jobs.json"
 
