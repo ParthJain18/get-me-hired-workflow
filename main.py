@@ -18,6 +18,7 @@ from modules.gemini_client import (
 from modules.resume_generator import create_resume_pdf, get_pdf_page_count
 from modules.email_module import send_notification
 from modules.tracker import load_processed_jobs, update_processed_jobs
+from modules.profile_builder import create_ideal_candidate_profile
 from keyword_filter import filter_jobs_by_experience, is_salary_over_min
 
 
@@ -126,6 +127,8 @@ def main():
     resume_text_for_matching = setup_resume_for_matching()
     if not resume_text_for_matching:
         return
+    
+    ideal_profile = create_ideal_candidate_profile(resume_text_for_matching)
 
     scraped_jobs = run_scraper()
     if not scraped_jobs:
@@ -145,7 +148,7 @@ def main():
 
     # Pre-filter with Cosine Similarity
     print("\n--- Pre-filtering with Cosine Similarity ---")
-    jobs_for_ranking = filter_jobs_by_similarity(filtered_jobs, resume_text_for_matching)
+    jobs_for_ranking = filter_jobs_by_similarity(filtered_jobs, ideal_profile)
     if not jobs_for_ranking:
         return
 

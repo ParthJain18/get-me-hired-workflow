@@ -11,4 +11,5 @@ dependencies = [
     "python-dotenv>=1.1.1",
     "python-jobspy>=1.1.82",
     "scikit-learn>=1.7.2",
+    "sentence-transformers>=5.1.0",
 ]
