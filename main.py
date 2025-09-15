@@ -2,25 +2,23 @@ import os
 import time
 import json
 import hashlib
-import random
 import pandas as pd
 from dotenv import load_dotenv
 from config import (
     SOURCE_RESUME_PATH, PARSED_RESUME_PATH, GEMINI_TOP_N,
     MIN_EXPERIENCE_YEARS, MAX_EXPERIENCE_YEARS, MIN_SALARY_INR,
-    USE_ENHANCED_DATA_FETCHING, COSINE_FILTER_TOP_N
+    TARGET_LOCATIONS # Import your new config
 )
 from modules.scraper import run_scraper
 from modules.nlp_processor import filter_jobs_by_similarity
 from modules.gemini_client import (
     parse_resume, get_job_rankings, generate_latex_resume,
-    classify_experience_level, condense_latex_resume
+    condense_latex_resume
 )
 from modules.resume_generator import create_resume_pdf, get_pdf_page_count
 from modules.email_module import send_notification
 from modules.tracker import load_processed_jobs, update_processed_jobs
 from keyword_filter import filter_jobs_by_experience, is_salary_over_min
-from modules.data_fetcher import fetch_structured_job_data
 
 
 def setup_resume_for_matching():
@@ -43,6 +41,7 @@ def setup_resume_for_matching():
                 print("⚠️ Warning: Could not decode parsed_resume.json. Will re-parse.")
 
     cached_hash = cached_data.get("source_hash")
+
     if current_source_hash == cached_hash:
         print("✅ Parsed resume is up-to-date (source hash matches).")
         return cached_data.get("parsed_text")
@@ -63,37 +62,58 @@ def setup_resume_for_matching():
             print("❌ Failed to parse resume. Using previous version if available.")
             return cached_data.get("parsed_text")
 
+def filter_jobs_by_location(jobs: list[dict], target_locations: list[str]) -> list[dict]:
+    """Filters jobs based on a list of target location keywords."""
+    print(f"\n--- Starting Location Filter (Targets: {', '.join(target_locations)}) ---")
+    initial_count = len(jobs)
+    filtered = []
+    
+    for job in jobs:
+        job_location = job.get('location')
+        if not job_location or pd.isna(job_location):
+            filtered.append(job)
+            continue
+        
+        job_location_lower = str(job_location).lower()
+        if any(target in job_location_lower for target in target_locations):
+            filtered.append(job)
+            
+    print(f"--- Location filter finished. {initial_count - len(filtered)} jobs removed. {len(filtered)} remain. ---")
+    return filtered
 
-def apply_filters(jobs_list):
+
+def apply_filters(jobs_list: list[dict]) -> list[dict]:
+    """Applies location, salary, and experience filters to a list of jobs."""
     if not jobs_list:
         return []
 
-    # Salary Filter
+    # --- Step 1: Location Filter ---
+    filtered_jobs = filter_jobs_by_location(jobs_list, TARGET_LOCATIONS)
+    if not filtered_jobs:
+        return []
+
+    # --- Step 2: Salary Filter ---
     if MIN_SALARY_INR > 0:
         print(f"\n--- Starting Salary Filter (Min: ₹{MIN_SALARY_INR:,}) ---")
-        df = pd.DataFrame(jobs_list)
-        required_cols = {'min_amount': pd.NA, 'max_amount': pd.NA, 'interval': 'yearly', 'currency': 'INR'}
-        for col, default in required_cols.items():
-            if col not in df.columns:
-                df[col] = default
-            # Use fillna on the series and assign it back
-            df[col] = df[col].fillna(default)
+        initial_count = len(filtered_jobs)
+        df = pd.DataFrame(filtered_jobs)
 
+        required_cols = {'min_amount': pd.NA, 'max_amount': pd.NA, 'interval': 'yearly', 'currency': 'INR'}
+        for col, default_val in required_cols.items():
+            if col not in df.columns: df[col] = default_val
+            df[col] = df[col].apply(lambda x: pd.NA if pd.isnull(x) else x)
+            df[col] = df[col].fillna(default_val)
 
         salary_mask = df.apply(is_salary_over_min, axis=1, min_annual_salary_inr=MIN_SALARY_INR)
-        jobs_list = df[salary_mask].to_dict('records')
-        print(f"--- Salary filter finished. {len(jobs_list)} jobs remain. ---")
-        if not jobs_list:
-            print("--- Pipeline finished: No jobs match your salary criteria. ---")
-            return []
+        filtered_jobs = df[salary_mask].to_dict('records')
+        print(f"--- Salary filter finished. {initial_count - len(filtered_jobs)} jobs removed. {len(filtered_jobs)} remain. ---")
+        if not filtered_jobs: return []
 
-    # Experience Filter
-    jobs_list = filter_jobs_by_experience(jobs_list, MAX_EXPERIENCE_YEARS)
-    if not jobs_list:
-        print("--- Pipeline finished: No jobs match your experience criteria. ---")
-        return []
-
-    return jobs_list
+    # --- Step 3: Experience Filter ---
+    print("\n--- Starting Keyword-based Experience Filter ---")
+    filtered_jobs = filter_jobs_by_experience(filtered_jobs, MAX_EXPERIENCE_YEARS)
+    
+    return filtered_jobs
 
 
 def main():
@@ -101,8 +121,7 @@ def main():
     load_dotenv()
 
     processed_job_urls, existing_recent_records = load_processed_jobs()
-    print(
-        f"🔍 Found {len(processed_job_urls)} previously processed jobs in the tracker.")
+    print(f"🔍 Found {len(processed_job_urls)} previously processed jobs in the tracker.")
 
     resume_text_for_matching = setup_resume_for_matching()
     if not resume_text_for_matching:
@@ -118,62 +137,25 @@ def main():
         print("--- Pipeline finished: No new jobs found. ---")
         return
 
-    if USE_ENHANCED_DATA_FETCHING:
-        print("\n--- Running Enhanced Workflow with Zyte API ---")
-
-        # TODO: REMOVE later
-        ENHANCED_WORKFLOW_SAMPLE_SIZE = 10
-        if len(new_jobs) > ENHANCED_WORKFLOW_SAMPLE_SIZE:
-            print(f"Selecting a random sample of {ENHANCED_WORKFLOW_SAMPLE_SIZE} from {len(new_jobs)} new jobs.")
-            jobs_to_process_sample = random.sample(new_jobs, ENHANCED_WORKFLOW_SAMPLE_SIZE)
-        else:
-            print(f"Processing all {len(new_jobs)} new jobs (less than sample size).")
-            jobs_to_process_sample = new_jobs
-
-        jobspy_data_map = {job.get('job_url'): job for job in jobs_to_process_sample if job.get('job_url')}
-        urls_to_fetch = list(jobspy_data_map.keys())
-
-        zyte_fetched_jobs = fetch_structured_job_data(urls_to_fetch) # type: ignore
-
-        print("\n--- Comparing jobspy data (Before) vs. Zyte data (After) ---")
-        for zyte_job in zyte_fetched_jobs:
-            url = zyte_job.get('job_url')
-            jobspy_job = jobspy_data_map.get(url, {})
-            print("-" * 70)
-            print(f"URL: {url}")
-            print(f"  [Before] jobspy Title:    {jobspy_job.get('title', 'N/A')}")
-            print(f"  [After]  Zyte Title:       {zyte_job.get('title', 'N/A')}")
-            print(f"  [Before] jobspy Company:   {jobspy_job.get('company', 'N/A')}")
-            print(f"  [After]  Zyte Company:     {zyte_job.get('company', 'N/A')}")
-            print(f"  [Before] jobspy Location:  {jobspy_job.get('location', 'N/A')}")
-            print(f"  [After]  Zyte Location:    {zyte_job.get('location', 'N/A')}")
-            print(f"  [Before] jobspy Salary:    {jobspy_job.get('salary', 'N/A')}")
-            print(f"  [After]  Zyte Salary:      {zyte_job.get('salary', 'N/A')}")
-            print(f"  [Before] jobspy Posted:    {jobspy_job.get('date_posted', 'N/A')}")
-            print(f"  [After]  Zyte Posted:      {zyte_job.get('date_posted', 'N/A')}")
-        print("-" * 70)
-
-        jobs_to_filter = zyte_fetched_jobs
-    else:
-        print("\n--- Running Original Workflow with jobspy ---")
-        jobs_to_filter = new_jobs
-
-    filtered_jobs = apply_filters(jobs_to_filter)
+    # Apply all pre-filters (Location, Salary, Experience)
+    filtered_jobs = apply_filters(new_jobs)
     if not filtered_jobs:
+        print("--- Pipeline finished: No jobs remain after filtering. ---")
         return
 
+    # Pre-filter with Cosine Similarity
     print("\n--- Pre-filtering with Cosine Similarity ---")
     jobs_for_ranking = filter_jobs_by_similarity(filtered_jobs, resume_text_for_matching)
     if not jobs_for_ranking:
         return
 
-    jobs_to_rank = jobs_for_ranking[:COSINE_FILTER_TOP_N]
-    print(f"Sending top {len(jobs_to_rank)} jobs for Gemini ranking.")
-
-    gemini_rankings = get_job_rankings(jobs_to_rank, resume_text_for_matching)
+    # Rank the most relevant jobs with Gemini
+    print("\n--- Ranking Top Jobs with Gemini ---")
+    gemini_rankings = get_job_rankings(jobs_for_ranking, resume_text_for_matching)
     if not gemini_rankings or 'ranked_jobs' not in gemini_rankings:
         return
 
+    # Generate Resumes and Collect Results
     try:
         with open(SOURCE_RESUME_PATH, 'r', encoding='utf-8') as f:
             source_latex = f.read()
@@ -181,8 +163,8 @@ def main():
         print(f"❌ Error: Source resume file '{SOURCE_RESUME_PATH}' not found.")
         return
 
-    ranked_jobs_info = gemini_rankings['ranked_jobs']
-    jobs_to_process = ranked_jobs_info[:GEMINI_TOP_N]
+    ranked_jobs = gemini_rankings['ranked_jobs']
+    jobs_to_process = ranked_jobs[:GEMINI_TOP_N]
     original_jobs_map = {str(job['id']): job for job in jobs_for_ranking}
     results_list = []
 
@@ -194,6 +176,7 @@ def main():
             continue
 
         full_job_details['match_reason'] = rank_info.get('match_reason', 'N/A')
+
         modified_latex = generate_latex_resume(source_latex, full_job_details)
         generation_failed = False
         final_latex = modified_latex if modified_latex else source_latex
@@ -236,7 +219,6 @@ def main():
         print("--- No resumes were successfully generated. ---")
 
     print("\n--- AI Job Application Assistant finished successfully! ---")
-
 
 if __name__ == "__main__":
     main()
