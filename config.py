@@ -9,6 +9,7 @@ MAX_EXPERIENCE_YEARS = 1
 JOB_SITES = ["linkedin", "indeed", "google", "naukri", "glassdoor"] # Sites supported by JobSpy
 COUNTRY_INDEED = "India" # Country for Indeed searches
 USE_PROXIES_IN_WORKFLOW = False # Set to True to enable proxy usage if PROXY_LIST is set in .env
+USE_ENHANCED_DATA_FETCHING = True
 
 RESULTS_WANTED = 30
 COSINE_FILTER_TOP_N = 20
