@@ -58,18 +58,15 @@ jobs:
       - name: Install dependencies with uv
         run: uv sync
 
-      - name: Install TeX Live + fonts (optimized)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            texlive-latex-base \
-            texlive-latex-extra \
-            texlive-fonts-recommended \
-            texlive-fonts-extra \
-            texlive-font-utils \
-            fonts-roboto || true
-        shell: bash
-
+      - name: Install TeX Live
+        uses: teatimeguest/setup-texlive-action@v3
+        with:
+          scheme: basic
+          packages: >-
+            collection-fontsrecommended
+            collection-latexextra
+            roboto
+            
       - name: Create .env from repository secrets
         run: |
           cat > .env <<EOF
