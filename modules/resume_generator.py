@@ -192,7 +192,13 @@ def create_resume_pdf(modified_latex_content, job):
         print("❌ 'pdflatex' not found. Ensure a LaTeX distribution is installed and in your PATH.")
         return None
     except subprocess.CalledProcessError as e:
-        print(f"❌ Failed to compile {tex_filepath}. Error: {e.stderr}")
+        if e.stdout:
+            print(f"❌ LaTeX stdout for {tex_filepath}:\n{e.stdout}")
+        if e.stderr:
+            print(f"❌ LaTeX stderr for {tex_filepath}:\n{e.stderr}")
+        else:
+            print(
+                f"❌ Failed to compile {tex_filepath}. No stderr output was produced.")
         return None
     except subprocess.TimeoutExpired:
         print(f"❌ Compilation timed out for {tex_filepath}.")

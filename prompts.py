@@ -1,4 +1,4 @@
-from config import GEMINI_TOP_N
+from config import GEMINI_TOP_N, USER_MESSAGE
 
 
 def get_resume_parsing_prompt(latex_source):
@@ -32,6 +32,7 @@ def get_ranking_prompt(resume_summary, job_postings_json):
 
     **Your Task:**
     Deeply analyze the jobs against my summary and rank the top {GEMINI_TOP_N} absolute best matches for me.
+    {USER_MESSAGE}
     """
 
 

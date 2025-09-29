@@ -204,21 +204,45 @@ def main():
                 f"⚠️ AI tailoring failed for '{str(full_job_details.get('title', 'N/A'))}'. Using default summary and keywords.")
 
         pdf_path = create_resume_pdf(final_latex, full_job_details)
-        page_count = get_pdf_page_count(pdf_path)
-        print(f"   📄 Compiled PDF has {page_count} page(s).")
+        used_fallback_resume = False
 
-        if page_count > 1:
+        if not pdf_path:
+            print(
+                "   ⚠️ Primary resume generation failed. Attempting fallback to base template...")
+            pdf_path = create_resume_pdf(source_latex, full_job_details)
+            if pdf_path:
+                used_fallback_resume = True
+                final_latex = source_latex
+                generation_failed = True
+                print("   ✅ Fallback resume generated using original template.")
+            else:
+                print("   ❌ Fallback resume generation also failed.")
+
+        if pdf_path:
+            page_count = get_pdf_page_count(pdf_path)
+            print(f"   📄 Compiled PDF has {page_count} page(s).")
+        else:
+            page_count = 0
+
+        if pdf_path and not used_fallback_resume and page_count > 1:
             print(
                 f"   ⚠️ Resume is {page_count} pages. Attempt 2: Condensing content...")
             condensed_latex = condense_latex_resume(final_latex)
             if condensed_latex:
                 final_latex = condensed_latex
-                pdf_path = create_resume_pdf(final_latex, full_job_details)
-                final_page_count = get_pdf_page_count(pdf_path)
-                print(
-                    f"   ✅ Condensing successful. Final PDF has {final_page_count} page(s).")
-                if final_page_count > 1:
-                    print("   ❌ Condensing failed to reduce to one page.")
+                condensed_pdf_path = create_resume_pdf(
+                    final_latex, full_job_details)
+                if condensed_pdf_path:
+                    pdf_path = condensed_pdf_path
+                    final_page_count = get_pdf_page_count(pdf_path)
+                    print(
+                        f"   ✅ Condensing successful. Final PDF has {final_page_count} page(s).")
+                    if final_page_count > 1:
+                        print("   ❌ Condensing failed to reduce to one page.")
+                else:
+                    print(
+                        "   ❌ Condensed LaTeX failed to compile. Reverting to pre-condensed resume.")
+                    generation_failed = True
             else:
                 print("   ❌ AI condensing failed.")
                 generation_failed = True

@@ -16,8 +16,8 @@ USE_ENHANCED_DATA_FETCHING = True
 
 RESULTS_WANTED = 30
 MAX_JOB_AGE_DAYS = 7
-COSINE_FILTER_TOP_N = 20
-GEMINI_TOP_N = 10
+COSINE_FILTER_TOP_N = 30
+GEMINI_TOP_N = 20
 MODEL_NAME = "gemini-2.5-pro"
 # Will be used to find the required experience level
 CLASSIFICATION_MODEL_NAME = "gemini-2.0-flash"
@@ -30,3 +30,4 @@ OUTPUT_DIR = "generated_resumes"
 PROCESSED_JOBS_PATH = "processed_jobs.json"
 
 DELIVERY_METHOD = "email"
+USER_MESSAGE = "Please prioritize SDE and AI ML related roles that suit my skills. Also, if the jobs aren't remote, prefer those in Mumbai."
