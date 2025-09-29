@@ -3,7 +3,7 @@ name: Job Scraping Daily Run
 on:
   workflow_dispatch:
   schedule:
-    - cron: "30 4 */2 * *" # every 2 days at 10:00 IST (adjust to */3 if you prefer every 3 days)
+    - cron: "30 4 */2 * *" # Every 2 days at 10:00 IST
 
 jobs:
   run-job-scraping:
@@ -12,35 +12,28 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download tracker artifact (if any)
+      - name: Download tracker artifact
         uses: actions/download-artifact@v4
         with:
           name: processed-jobs-tracker
           path: .
         continue-on-error: true
-
       - name: Restore tracker file if present
         run: |
           if [ -f processed-jobs-tracker/processed_jobs.json ]; then
             mv processed-jobs-tracker/processed_jobs.json processed_jobs.json
             echo "Restored processed_jobs.json from artifact"
-          else
-            echo "No previous tracker artifact found — starting fresh"
           fi
         shell: bash
-
-      - name: Download parsed resume artifact (if any)
+      - name: Download parsed resume artifact
         uses: actions/download-artifact@v4
         with:
           name: parsed-resume
           path: .
         continue-on-error: true
-
       - name: Restore parsed resume file if present
         run: |
-          # Look for the new .json file
-          if [ -f parsed-resume-json/parsed_resume.json ]; then
-            mv parsed-resume-json/parsed_resume.json parsed_resume.json
+          if [ -f parsed_resume.json ]; then
             echo "Restored parsed_resume.json from artifact"
           else
             echo "No previous parsed resume artifact found — will re-parse"
@@ -51,22 +44,27 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-
       - name: Install uv
         uses: astral-sh/setup-uv@v1
-
+      - name: Cache sentence-transformers models
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/torch/sentence_transformers
+          key: ${{ runner.os }}-sentencetransformers-${{ hashFiles('**/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-sentencetransformers-
       - name: Install dependencies with uv
         run: uv sync
 
       - name: Install TeX Live
-        uses: teatimeguest/setup-texlive-action@v3
+        uses: TeX-Live/setup-texlive-action@v3
         with:
-          scheme: basic
-          packages: >-
+          packages: |
+            scheme-basic
             collection-fontsrecommended
             collection-latexextra
             roboto
-            
+
       - name: Create .env from repository secrets
         run: |
           cat > .env <<EOF
@@ -79,7 +77,6 @@ jobs:
           EMAIL_TO=${{ secrets.EMAIL_TO }}
           EOF
         shell: bash
-
       - name: Ensure processed_jobs.json exists
         run: |
           if [ ! -f processed_jobs.json ]; then
@@ -87,19 +84,14 @@ jobs:
             echo "Created empty processed_jobs.json"
           fi
         shell: bash
-
       - name: Run AI Job Application Assistant
-        env:
-          PYTHONUNBUFFERED: 1
         run: uv run python main.py
         shell: bash
-
       - name: Upload tracker artifact
         uses: actions/upload-artifact@v4
         with:
           name: processed-jobs-tracker
           path: processed_jobs.json
-
       - name: Upload parsed resume artifact
         uses: actions/upload-artifact@v4
         with:
