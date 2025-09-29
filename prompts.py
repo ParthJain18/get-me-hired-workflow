@@ -1,5 +1,6 @@
 from config import GEMINI_TOP_N
 
+
 def get_resume_parsing_prompt(latex_source):
     """Generates a prompt to parse a LaTeX resume into clean text."""
     return f"""
@@ -17,6 +18,7 @@ def get_resume_parsing_prompt(latex_source):
     Return only the clean text block.
     """
 
+
 def get_ranking_prompt(resume_summary, job_postings_json):
     """Generates a prompt for Gemini to rank jobs."""
     return f"""
@@ -32,33 +34,44 @@ def get_ranking_prompt(resume_summary, job_postings_json):
     Deeply analyze the jobs against my summary and rank the top {GEMINI_TOP_N} absolute best matches for me.
     """
 
-def get_latex_generation_prompt(latex_source, job_title, job_company, job_description):
-    """Generates a prompt for Gemini to subtly tune and return a full LaTeX resume."""
+
+def get_resume_content_prompt(latex_source, job_title, job_company, job_description):
+    """Generates a prompt requesting JSON snippets for tailored resume content."""
     return f"""
-    You are a world-class career coach and an expert in LaTeX resume formatting.
-    Your task is to tailor my existing resume for a specific job application, ensuring it remains on a single page.
+        You are a world-class career coach and resume strategist. Tailor the highlighted content of my resume for a specific job opening.
 
-    **My Original LaTeX Resume:**
-    ```latex
-    {latex_source}
-    ```
+        **Base Resume (LaTeX Source):**
+        ```latex
+        {latex_source}
+        ```
 
-    **The Job I'm Applying For:**
-    - **Title:** {job_title}
-    - **Company:** {job_company}
-    - **Description:** {job_description}
+        **Target Role:**
+        - Title: {job_title}
+        - Company: {job_company}
+        - Description: {job_description}
 
-    **Your Instructions:**
-    1.  **Critical Constraint: The final LaTeX output MUST compile to a single page.** This is your most important instruction. Your primary goal is to be concise. If your edits risk making the content longer, you MUST shorten other parts of the resume to compensate.
-    2.  **Subtle Content Adjustments:** Refine and rephrase the wording of my current sections to align with the job description. Rephrase sentences to be more direct and action-oriented.
-    3.  **Skills Section:** Reorder and slightly reword the skills to highlight the 5–7 most relevant ones.
-    4.  **Experience/Projects:** Subtly adjust bullet points to emphasize achievements that align with the job's requirements. If necessary, combine or shorten bullet points to save space.
-    5.  **Preserve Structure and Formatting:** Do NOT alter the LaTeX structure, add new environments, or change layout, fonts, or spacing.
-    6.  **Valid LaTeX:** Ensure correct escaping of special characters.
+        **Deliverables:**
+        Return a JSON object with EXACTLY these keys:
+        ```json
+        {{
+            "summary_bullets": ["..."],
+            "keywords": ["..."],
+            "highlight_bullets": ["..."]
+        }}
+        ```
 
-    **Output:**
-    Return ONLY the complete, modified, and valid LaTeX source code.
-    """
+        **Rules:**
+        - Provide 2 to 3 concise summary bullets in "summary_bullets" emphasising fit for the job.
+        - Include 6 to 8 high-impact, comma-free keyword phrases in "keywords". Prefer skills, tools, domains, or certifications mentioned in the job.
+        - Provide 3 job-aligned achievement bullets in "highlight_bullets". Each must be <= 140 characters, start with a strong verb, and include measurable impact when possible.
+        - Use plain text only. Do NOT return LaTeX syntax, markdown, or additional commentary.
+        - Do not invent experience I do not have. Prioritize items supported by the base resume or clearly implied by the description.
+        - Ensure all strings are unique, single-line, and free of surrounding quotes beyond JSON requirements.
+
+        **Output:**
+        Return only the JSON object—no markdown fences, explanations, or additional keys.
+        """
+
 
 def get_experience_classification_prompt(job_title: str, job_description: str) -> str:
     return f"""

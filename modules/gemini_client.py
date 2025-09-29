@@ -3,8 +3,8 @@ import json
 import time
 from google import genai
 from google.genai import types
-from prompts import get_resume_parsing_prompt, get_ranking_prompt, get_latex_generation_prompt, get_experience_classification_prompt, get_condensing_prompt
-from models.gemini_output_models import RankingResponse, ExperienceResponse
+from prompts import get_resume_parsing_prompt, get_ranking_prompt, get_resume_content_prompt, get_experience_classification_prompt, get_condensing_prompt
+from models.gemini_output_models import RankingResponse, ExperienceResponse, ResumeContentResponse
 from dotenv import load_dotenv
 from config import MODEL_NAME, CLASSIFICATION_MODEL_NAME
 
@@ -87,21 +87,29 @@ def get_job_rankings(jobs_list, resume_summary):
         return None
 
 
-def generate_latex_resume(latex_source, job):
+def generate_resume_content(latex_source, job):
     print(
-        f"📝 Calling Gemini to generate resume for '{job.get('title')}' at '{job.get('company')}'...")
-    prompt = get_latex_generation_prompt(
+        f"📝 Calling Gemini to tailor content for '{job.get('title')}' at '{job.get('company')}'...")
+    prompt = get_resume_content_prompt(
         latex_source,
         job.get('title', 'N/A'),
         job.get('company', 'N/A'),
         job.get('description', '')[:5000]
     )
 
-    modified_latex = _call_gemini(prompt)
-    if modified_latex:
-        print("✅ Received tailored LaTeX source from Gemini.")
-        return modified_latex.strip().replace('```latex', '').replace('```', '')
-    return modified_latex
+    response_text = _call_gemini(prompt, response_schema=ResumeContentResponse)
+    if not response_text:
+        return None
+
+    try:
+        content = json.loads(response_text)
+        print("✅ Received structured tailoring content from Gemini.")
+        return content
+    except json.JSONDecodeError as exc:
+        print(f"❌ Failed to parse structured content JSON: {exc}")
+        print(f"Received text: {response_text}")
+        return None
+
 
 def condense_latex_resume(latex_source):
     prompt = get_condensing_prompt(latex_source)
@@ -110,6 +118,7 @@ def condense_latex_resume(latex_source):
         print("✅ Received condensed LaTeX source from Gemini.")
         return condensed_latex.strip().replace('```latex', '').replace('```', '')
     return None
+
 
 def classify_experience_level(job):
     print(f"🧠 Classifying experience for '{job.get('title', 'N/A')}'...")

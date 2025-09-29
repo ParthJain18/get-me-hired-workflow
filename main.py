@@ -7,15 +7,15 @@ from dotenv import load_dotenv
 from config import (
     SOURCE_RESUME_PATH, PARSED_RESUME_PATH, GEMINI_TOP_N,
     MIN_EXPERIENCE_YEARS, MAX_EXPERIENCE_YEARS, MIN_SALARY_INR,
-    TARGET_LOCATIONS # Import your new config
+    TARGET_LOCATIONS  # Import your new config
 )
 from modules.scraper import run_scraper
 from modules.nlp_processor import filter_jobs_by_similarity
 from modules.gemini_client import (
-    parse_resume, get_job_rankings, generate_latex_resume,
+    parse_resume, get_job_rankings, generate_resume_content,
     condense_latex_resume
 )
-from modules.resume_generator import create_resume_pdf, get_pdf_page_count
+from modules.resume_generator import create_resume_pdf, get_pdf_page_count, prepare_resume_latex
 from modules.email_module import send_notification
 from modules.tracker import load_processed_jobs, update_processed_jobs
 from modules.profile_builder import create_ideal_candidate_profile
@@ -63,23 +63,26 @@ def setup_resume_for_matching():
             print("❌ Failed to parse resume. Using previous version if available.")
             return cached_data.get("parsed_text")
 
+
 def filter_jobs_by_location(jobs: list[dict], target_locations: list[str]) -> list[dict]:
     """Filters jobs based on a list of target location keywords."""
-    print(f"\n--- Starting Location Filter (Targets: {', '.join(target_locations)}) ---")
+    print(
+        f"\n--- Starting Location Filter (Targets: {', '.join(target_locations)}) ---")
     initial_count = len(jobs)
     filtered = []
-    
+
     for job in jobs:
         job_location = job.get('location')
         if not job_location or pd.isna(job_location):
             filtered.append(job)
             continue
-        
+
         job_location_lower = str(job_location).lower()
         if any(target in job_location_lower for target in target_locations):
             filtered.append(job)
-            
-    print(f"--- Location filter finished. {initial_count - len(filtered)} jobs removed. {len(filtered)} remain. ---")
+
+    print(
+        f"--- Location filter finished. {initial_count - len(filtered)} jobs removed. {len(filtered)} remain. ---")
     return filtered
 
 
@@ -99,21 +102,27 @@ def apply_filters(jobs_list: list[dict]) -> list[dict]:
         initial_count = len(filtered_jobs)
         df = pd.DataFrame(filtered_jobs)
 
-        required_cols = {'min_amount': pd.NA, 'max_amount': pd.NA, 'interval': 'yearly', 'currency': 'INR'}
+        required_cols = {'min_amount': pd.NA, 'max_amount': pd.NA,
+                         'interval': 'yearly', 'currency': 'INR'}
         for col, default_val in required_cols.items():
-            if col not in df.columns: df[col] = default_val
+            if col not in df.columns:
+                df[col] = default_val
             df[col] = df[col].apply(lambda x: pd.NA if pd.isnull(x) else x)
             df[col] = df[col].fillna(default_val)
 
-        salary_mask = df.apply(is_salary_over_min, axis=1, min_annual_salary_inr=MIN_SALARY_INR)
+        salary_mask = df.apply(is_salary_over_min, axis=1,
+                               min_annual_salary_inr=MIN_SALARY_INR)
         filtered_jobs = df[salary_mask].to_dict('records')
-        print(f"--- Salary filter finished. {initial_count - len(filtered_jobs)} jobs removed. {len(filtered_jobs)} remain. ---")
-        if not filtered_jobs: return []
+        print(
+            f"--- Salary filter finished. {initial_count - len(filtered_jobs)} jobs removed. {len(filtered_jobs)} remain. ---")
+        if not filtered_jobs:
+            return []
 
     # --- Step 3: Experience Filter ---
     print("\n--- Starting Keyword-based Experience Filter ---")
-    filtered_jobs = filter_jobs_by_experience(filtered_jobs, MAX_EXPERIENCE_YEARS)
-    
+    filtered_jobs = filter_jobs_by_experience(
+        filtered_jobs, MAX_EXPERIENCE_YEARS)
+
     return filtered_jobs
 
 
@@ -122,20 +131,23 @@ def main():
     load_dotenv()
 
     processed_job_urls, existing_recent_records = load_processed_jobs()
-    print(f"🔍 Found {len(processed_job_urls)} previously processed jobs in the tracker.")
+    print(
+        f"🔍 Found {len(processed_job_urls)} previously processed jobs in the tracker.")
 
     resume_text_for_matching = setup_resume_for_matching()
     if not resume_text_for_matching:
         return
-    
+
     ideal_profile = create_ideal_candidate_profile(resume_text_for_matching)
 
     scraped_jobs = run_scraper()
     if not scraped_jobs:
         return
 
-    new_jobs = [job for job in scraped_jobs if job.get('job_url') not in processed_job_urls]
-    print(f"✨ Found {len(new_jobs)} new jobs to process after filtering duplicates.")
+    new_jobs = [job for job in scraped_jobs if job.get(
+        'job_url') not in processed_job_urls]
+    print(
+        f"✨ Found {len(new_jobs)} new jobs to process after filtering duplicates.")
     if not new_jobs:
         print("--- Pipeline finished: No new jobs found. ---")
         return
@@ -154,7 +166,8 @@ def main():
 
     # Rank the most relevant jobs with Gemini
     print("\n--- Ranking Top Jobs with Gemini ---")
-    gemini_rankings = get_job_rankings(jobs_for_ranking, resume_text_for_matching)
+    gemini_rankings = get_job_rankings(
+        jobs_for_ranking, resume_text_for_matching)
     if not gemini_rankings or 'ranked_jobs' not in gemini_rankings:
         return
 
@@ -175,30 +188,35 @@ def main():
         print(f"\n--- Processing Job {i+1} of {len(jobs_to_process)} ---")
         full_job_details = original_jobs_map.get(rank_info['id'])
         if not full_job_details:
-            print(f"⚠️ Could not find full details for job ID {rank_info['id']}. Skipping.")
+            print(
+                f"⚠️ Could not find full details for job ID {rank_info['id']}. Skipping.")
             continue
 
         full_job_details['match_reason'] = rank_info.get('match_reason', 'N/A')
 
-        modified_latex = generate_latex_resume(source_latex, full_job_details)
-        generation_failed = False
-        final_latex = modified_latex if modified_latex else source_latex
-        if not modified_latex:
-            print(f"⚠️ AI resume generation failed for '{str(full_job_details.get('title', 'N/A'))}'.")
-            generation_failed = True
+        tailored_payload = generate_resume_content(
+            source_latex, full_job_details)
+        final_latex, used_ai_content = prepare_resume_latex(
+            source_latex, full_job_details, tailored_payload)
+        generation_failed = tailored_payload is None or not used_ai_content
+        if generation_failed:
+            print(
+                f"⚠️ AI tailoring failed for '{str(full_job_details.get('title', 'N/A'))}'. Using default summary and keywords.")
 
         pdf_path = create_resume_pdf(final_latex, full_job_details)
         page_count = get_pdf_page_count(pdf_path)
         print(f"   📄 Compiled PDF has {page_count} page(s).")
 
         if page_count > 1:
-            print(f"   ⚠️ Resume is {page_count} pages. Attempt 2: Condensing content...")
+            print(
+                f"   ⚠️ Resume is {page_count} pages. Attempt 2: Condensing content...")
             condensed_latex = condense_latex_resume(final_latex)
             if condensed_latex:
                 final_latex = condensed_latex
                 pdf_path = create_resume_pdf(final_latex, full_job_details)
                 final_page_count = get_pdf_page_count(pdf_path)
-                print(f"   ✅ Condensing successful. Final PDF has {final_page_count} page(s).")
+                print(
+                    f"   ✅ Condensing successful. Final PDF has {final_page_count} page(s).")
                 if final_page_count > 1:
                     print("   ❌ Condensing failed to reduce to one page.")
             else:
@@ -212,16 +230,19 @@ def main():
                 'generation_failed': generation_failed
             })
         else:
-            print(f"❌ Critical Error: Could not generate PDF for '{str(full_job_details.get('title', 'N/A'))}'.")
+            print(
+                f"❌ Critical Error: Could not generate PDF for '{str(full_job_details.get('title', 'N/A'))}'.")
 
     if results_list:
         send_notification(results_list)
-        newly_processed_urls = [res['job_details']['job_url'] for res in results_list]
+        newly_processed_urls = [res['job_details']['job_url']
+                                for res in results_list]
         update_processed_jobs(newly_processed_urls, existing_recent_records)
     else:
         print("--- No resumes were successfully generated. ---")
 
     print("\n--- AI Job Application Assistant finished successfully! ---")
+
 
 if __name__ == "__main__":
     main()
