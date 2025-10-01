@@ -60,12 +60,12 @@ jobs:
           EMAIL_TO=${{ secrets.EMAIL_TO }}
           EOF
         shell: bash
-      - name: Ensure processed_jobs.json exists
+      - name: Create state file if cache not found
+        if: steps.restore-state.outputs.cache-hit != 'true'
         run: |
-          if [ ! -f processed_jobs.json ]; then
-            echo "[]" > processed_jobs.json
-            echo "Created empty processed_jobs.json"
-          fi
+          echo "[]" > processed_jobs.json
+          echo "{}" > parsed_resume.json
+          echo "Cache not found. Created empty state files."
         shell: bash
       - name: Run AI Job Application Assistant
         run: uv run python main.py
@@ -80,16 +80,6 @@ jobs:
         with:
           name: parsed-resume
           path: parsed_resume.json
-      - name: Prepare files for state cache
-        if: always()
-        run: |
-          if [ ! -f processed_jobs.json ]; then
-            echo "[]" > processed_jobs.json
-          fi
-          if [ ! -f parsed_resume.json ]; then
-            echo "{}" > parsed_resume.json
-          fi
-        shell: bash
       - name: Persist state to cache
         if: always()
         uses: actions/cache/save@v4
@@ -97,4 +87,4 @@ jobs:
           path: |
             processed_jobs.json
             parsed_resume.json
-          key: state-${{ runner.os }}-${{ github.run_id }}
+          key: state-${{ runner.os }}-${{ github.ref_name }}
