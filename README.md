@@ -2,8 +2,10 @@
 
 An automated Python pipeline that scrapes job postings, uses a multi-stage filtering process to find the most relevant roles, and leverages the Gemini API to tailor your LaTeX resume for the top-ranked positions.
 
-[](https://www.python.org/)
-[](https://ai.google.dev/)
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute to this project.
+
 
 ## 🤖 What It Does
 
